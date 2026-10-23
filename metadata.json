@@ -1,0 +1,6 @@
+{
+  "name": "RUANG JOGJA — Studio Arsitektur, Interior & Jasa Bangun Rumah 3D Yogyakarta",
+  "description": "Platform interaktif 3D jasa arsitektur, desain interior, pembangunan rumah baru, dan renovasi hunian untuk wilayah Yogyakarta, Sleman, Bantul, Kulon Progo, dan Gunungkidul.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
