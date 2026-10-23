@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { HouseModel, InteriorRoom, InteriorStyleConfig } from '../config/siteConfig';
 
 interface HouseIllustrationProps {
@@ -6,257 +6,260 @@ interface HouseIllustrationProps {
   className?: string;
 }
 
-export const HouseCardCanvas: React.FC<HouseIllustrationProps> = ({ model, className = '' }) => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const width = 640;
-    const height = 420;
-    canvas.width = width;
-    canvas.height = height;
-
+export const HouseCardCanvas: React.FC<HouseIllustrationProps> = React.memo(
+  ({ model, className = '' }) => {
     const c = model.config3D;
+    const baseW = Math.round(340 * c.footprintScaleX);
+    const baseX = Math.round((640 - baseW) / 2);
+    const groundY = 295;
+    const storyH = 88;
+    const mainH = c.stories === 2 ? Math.round(storyH * 1.8) : storyH;
+    const mainTopY = groundY - 12 - mainH;
 
-    // 1. Sky / Architectural Twilight Gradient
-    const skyGrad = ctx.createLinearGradient(0, 0, 0, height * 0.72);
-    skyGrad.addColorStop(0, '#161E19');
-    skyGrad.addColorStop(0.55, '#27342B');
-    skyGrad.addColorStop(1, '#C59B6D');
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0, 0, width, height);
+    const glassX = Math.round(baseX + baseW * 0.36);
+    const glassW = Math.round(baseW * 0.56);
+    const glassH = storyH - 22;
+    const glassY = groundY - 12 - glassH;
 
-    // Subtle Architectural Grid Lines in Sky
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-    ctx.lineWidth = 1;
-    for (let x = 40; x < width; x += 60) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, height * 0.72);
-      ctx.stroke();
-    }
-    for (let y = 40; y < height * 0.72; y += 60) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(width, y);
-      ctx.stroke();
-    }
-
-    // Soft Sun / Warm Glow
-    const sunGrad = ctx.createRadialGradient(width * 0.78, height * 0.28, 8, width * 0.78, height * 0.28, 160);
-    sunGrad.addColorStop(0, 'rgba(255, 226, 176, 0.45)');
-    sunGrad.addColorStop(1, 'rgba(255, 226, 176, 0)');
-    ctx.fillStyle = sunGrad;
-    ctx.fillRect(0, 0, width, height);
-
-    // Distant Tropical Silhouette / Merapi Horizon
-    ctx.fillStyle = '#1B241E';
-    ctx.beginPath();
-    ctx.moveTo(0, height * 0.68);
-    ctx.quadraticCurveTo(width * 0.25, height * 0.56, width * 0.52, height * 0.65);
-    ctx.quadraticCurveTo(width * 0.8, height * 0.52, width, height * 0.66);
-    ctx.lineTo(width, height);
-    ctx.lineTo(0, height);
-    ctx.closePath();
-    ctx.fill();
-
-    // 2. Ground Plinth & Courtyard Lawn
-    const groundY = height * 0.68;
-    const groundGrad = ctx.createLinearGradient(0, groundY, 0, height);
-    groundGrad.addColorStop(0, '#222A22');
-    groundGrad.addColorStop(1, '#121612');
-    ctx.fillStyle = groundGrad;
-    ctx.fillRect(0, groundY, width, height - groundY);
-
-    // Stone Plinth Foundation
-    const baseW = 360 * c.footprintScaleX;
-    const baseX = (width - baseW) / 2;
-    ctx.fillStyle = c.stoneColor;
-    ctx.fillRect(baseX - 18, groundY - 14, baseW + 36, 20);
-
-    // 3. Main Building Volumes
-    const storyH = 92;
-    const mainH = c.stories === 2 ? storyH * 1.85 : storyH;
-    const mainTopY = groundY - 14 - mainH;
-
-    // Shadow side / Secondary Volume
-    ctx.fillStyle = c.secondaryWallColor;
-    ctx.fillRect(baseX, mainTopY + 12, baseW * 0.45, mainH - 12);
-
-    // Primary Illuminated Wall Volume
-    ctx.fillStyle = c.wallColor;
-    ctx.fillRect(baseX + baseW * 0.32, mainTopY, baseW * 0.68, mainH);
-
-    // Warm Interior Window Glow
-    const winGrad = ctx.createLinearGradient(0, mainTopY + 20, 0, groundY - 20);
-    winGrad.addColorStop(0, '#FFE4B5');
-    winGrad.addColorStop(0.5, '#E39A4C');
-    winGrad.addColorStop(1, '#8C5222');
-
-    // Ground Floor Large Glass Opening
-    const glassX = baseX + baseW * 0.38;
-    const glassW = baseW * 0.54;
-    const glassH = storyH - 24;
-    const glassY = groundY - 14 - glassH;
-    ctx.fillStyle = winGrad;
-    ctx.fillRect(glassX, glassY, glassW, glassH);
-
-    // Mullions / Window Frames
-    ctx.strokeStyle = c.metalColor;
-    ctx.lineWidth = 3;
-    ctx.strokeRect(glassX, glassY, glassW, glassH);
-    for (let i = 1; i <= 3; i++) {
-      const mx = glassX + (glassW / 4) * i;
-      ctx.beginPath();
-      ctx.moveTo(mx, glassY);
-      ctx.lineTo(mx, glassY + glassH);
-      ctx.stroke();
-    }
-
-    // Mediterranean Arches if enabled
-    if (c.hasArches) {
-      ctx.fillStyle = c.wallColor;
-      const archCount = 3;
-      const archW = glassW / archCount;
-      for (let i = 0; i < archCount; i++) {
-        const ax = glassX + i * archW;
-        ctx.beginPath();
-        ctx.moveTo(ax, glassY);
-        ctx.lineTo(ax + archW, glassY);
-        ctx.lineTo(ax + archW, glassY + 24);
-        ctx.arc(ax + archW / 2, glassY + 24, archW / 2 - 3, 0, Math.PI, true);
-        ctx.closePath();
-        ctx.fill();
-      }
-    }
-
-    // Second Story Window & Timber Louvers if 2 stories
-    if (c.stories === 2) {
-      const upperGlassY = mainTopY + 18;
-      const upperGlassH = storyH * 0.68;
-      ctx.fillStyle = winGrad;
-      ctx.fillRect(glassX + 12, upperGlassY, glassW - 24, upperGlassH);
-      ctx.strokeStyle = c.metalColor;
-      ctx.strokeRect(glassX + 12, upperGlassY, glassW - 24, upperGlassH);
-
-      // Horizontal Slab Divider
-      ctx.fillStyle = c.roofColor;
-      ctx.fillRect(baseX - 10, groundY - 14 - storyH, baseW + 28, 10);
-    }
-
-    // Timber Secondary Skin Louvers
-    ctx.fillStyle = c.woodColor;
+    const louverCount = Math.min(c.louverCount, 8);
     const louverStartX = baseX + 14;
-    const louverAreaW = baseW * 0.28;
-    const spacing = louverAreaW / Math.max(c.louverCount, 4);
-    for (let i = 0; i < c.louverCount; i++) {
-      ctx.fillRect(louverStartX + i * spacing, mainTopY + 16, 4, mainH - 20);
-    }
+    const louverSpacing = Math.round((baseW * 0.26) / Math.max(louverCount, 4));
 
-    // 4. Roof Archetype Geometry
-    ctx.fillStyle = c.roofColor;
-    if (c.roofType === 'joglo-kontemporer') {
-      // Lower Eave
-      ctx.beginPath();
-      ctx.moveTo(baseX - 36, mainTopY + 6);
-      ctx.lineTo(baseX + baseW + 36, mainTopY + 6);
-      ctx.lineTo(baseX + baseW - 15, mainTopY - 26);
-      ctx.lineTo(baseX + 15, mainTopY - 26);
-      ctx.closePath();
-      ctx.fill();
-      // Upper Joglo Tajug Crown
-      ctx.beginPath();
-      ctx.moveTo(baseX + 35, mainTopY - 24);
-      ctx.lineTo(baseX + baseW - 35, mainTopY - 24);
-      ctx.lineTo(baseX + baseW * 0.62, mainTopY - 76);
-      ctx.lineTo(baseX + baseW * 0.38, mainTopY - 76);
-      ctx.closePath();
-      ctx.fill();
-      // Wood Fascia Trim
-      ctx.fillStyle = c.woodColor;
-      ctx.fillRect(baseX - 36, mainTopY + 2, baseW + 72, 5);
-    } else if (c.roofType === 'japandi-gable') {
-      ctx.beginPath();
-      ctx.moveTo(baseX - 24, mainTopY + 6);
-      ctx.lineTo(baseX + baseW * 0.55, mainTopY - 54);
-      ctx.lineTo(baseX + baseW + 24, mainTopY + 6);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = c.woodColor;
-      ctx.lineWidth = 5;
-      ctx.stroke();
-    } else if (c.roofType === 'tropical-hip' || c.roofType === 'mediterranean-arch') {
-      ctx.beginPath();
-      ctx.moveTo(baseX - 32, mainTopY + 4);
-      ctx.lineTo(baseX + baseW + 32, mainTopY + 4);
-      ctx.lineTo(baseX + baseW * 0.72, mainTopY - 46);
-      ctx.lineTo(baseX + baseW * 0.28, mainTopY - 46);
-      ctx.closePath();
-      ctx.fill();
-    } else if (c.roofType === 'industrial-sawtooth') {
-      // Twin pitched industrial steel roof
-      ctx.beginPath();
-      ctx.moveTo(baseX - 10, mainTopY + 4);
-      ctx.lineTo(baseX + baseW * 0.48, mainTopY - 36);
-      ctx.lineTo(baseX + baseW * 0.48, mainTopY + 4);
-      ctx.lineTo(baseX + baseW + 10, mainTopY - 36);
-      ctx.lineTo(baseX + baseW + 10, mainTopY + 4);
-      ctx.closePath();
-      ctx.fill();
-    } else if (c.roofType === 'compact-mono') {
-      ctx.beginPath();
-      ctx.moveTo(baseX - 18, mainTopY + 8);
-      ctx.lineTo(baseX + baseW + 20, mainTopY - 28);
-      ctx.lineTo(baseX + baseW + 20, mainTopY + 8);
-      ctx.closePath();
-      ctx.fill();
-    } else {
-      // Flat Cantilever Modern Slab
-      ctx.fillRect(baseX - 28, mainTopY - 10, baseW + 56, 14);
-      ctx.fillStyle = c.woodColor;
-      ctx.fillRect(baseX - 26, mainTopY + 4, baseW + 52, 4);
-    }
+    return (
+      <div
+        className={`relative w-full h-full overflow-hidden bg-[#161E19] select-none ${className}`}
+        role="img"
+        aria-label={`Visualisasi konsep arsitektur ${model.name}`}
+      >
+        <svg
+          viewBox="0 0 640 400"
+          className="w-full h-full object-cover block"
+          preserveAspectRatio="xMidYMid slice"
+        >
+          <defs>
+            <linearGradient id={`sky-${model.id}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#141B16" />
+              <stop offset="60%" stopColor="#263329" />
+              <stop offset="100%" stopColor="#BA8F63" />
+            </linearGradient>
+            <radialGradient id={`sun-${model.id}`} cx="78%" cy="28%" r="35%">
+              <stop offset="0%" stopColor="#FFE3B3" stopOpacity="0.42" />
+              <stop offset="100%" stopColor="#FFE3B3" stopOpacity="0" />
+            </radialGradient>
+            <linearGradient id={`win-${model.id}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#FFE6BA" />
+              <stop offset="55%" stopColor="#E09648" />
+              <stop offset="100%" stopColor="#874E1F" />
+            </linearGradient>
+            <linearGradient id={`pool-${model.id}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#35686E" stopOpacity="0.9" />
+              <stop offset="100%" stopColor="#173034" stopOpacity="0.98" />
+            </linearGradient>
+          </defs>
 
-    // 5. Reflection Pool in Foreground if enabled
-    if (c.hasPool) {
-      const poolY = groundY + 14;
-      const poolH = 54;
-      const poolGrad = ctx.createLinearGradient(0, poolY, 0, poolY + poolH);
-      poolGrad.addColorStop(0, 'rgba(54, 104, 110, 0.85)');
-      poolGrad.addColorStop(1, 'rgba(24, 48, 52, 0.95)');
-      ctx.fillStyle = poolGrad;
-      ctx.fillRect(baseX + 20, poolY, baseW - 10, poolH);
+          {/* Sky Background */}
+          <rect width="640" height="300" fill={`url(#sky-${model.id})`} />
+          <rect width="640" height="300" fill={`url(#sun-${model.id})`} />
 
-      // Warm window reflection on water
-      ctx.fillStyle = 'rgba(255, 210, 140, 0.22)';
-      ctx.fillRect(glassX, poolY + 4, glassW * 0.85, poolH - 12);
+          {/* Subtle Architectural Grid */}
+          <g stroke="rgba(255,255,255,0.04)" strokeWidth="1">
+            <line x1="120" y1="0" x2="120" y2="295" />
+            <line x1="240" y1="0" x2="240" y2="295" />
+            <line x1="360" y1="0" x2="360" y2="295" />
+            <line x1="480" y1="0" x2="480" y2="295" />
+            <line x1="0" y1="90" x2="640" y2="90" />
+            <line x1="0" y1="180" x2="640" y2="180" />
+          </g>
 
-      // Pool Coping Border
-      ctx.strokeStyle = c.stoneColor;
-      ctx.lineWidth = 3;
-      ctx.strokeRect(baseX + 20, poolY, baseW - 10, poolH);
-    }
+          {/* Distant Horizon Silhouette */}
+          <path
+            d="M0,285 Q160,240 330,275 T640,270 L640,400 L0,400 Z"
+            fill="#1A221C"
+          />
 
-    // 6. Architectural Dimension Callout Overlay (Bottom-Left)
-    ctx.fillStyle = 'rgba(22, 25, 21, 0.72)';
-    ctx.fillRect(18, 18, 175, 32);
-    ctx.fillStyle = '#F6F3EC';
-    ctx.font = '500 11px "JetBrains Mono", monospace';
-    ctx.fillText(`${model.floors} LANTAI · ${model.buildingArea}`, 28, 38);
-  }, [model]);
+          {/* Ground Courtyard */}
+          <rect x="0" y={groundY} width="640" height={400 - groundY} fill="#181F18" />
 
-  return (
-    <canvas
-      ref={canvasRef}
-      aria-label={`Visualisasi konsep arsitektur ${model.name}`}
-      className={`w-full h-full object-cover block ${className}`}
-    />
-  );
-};
+          {/* Stone Plinth */}
+          <rect
+            x={baseX - 16}
+            y={groundY - 12}
+            width={baseW + 32}
+            height="18"
+            fill={c.stoneColor}
+          />
+
+          {/* Secondary Left Volume */}
+          <rect
+            x={baseX}
+            y={mainTopY + 10}
+            width={Math.round(baseW * 0.44)}
+            height={mainH - 10}
+            fill={c.secondaryWallColor}
+          />
+
+          {/* Main Right Illuminated Volume */}
+          <rect
+            x={Math.round(baseX + baseW * 0.32)}
+            y={mainTopY}
+            width={Math.round(baseW * 0.68)}
+            height={mainH}
+            fill={c.wallColor}
+          />
+
+          {/* Ground Floor Panoramic Window */}
+          <rect
+            x={glassX}
+            y={glassY}
+            width={glassW}
+            height={glassH}
+            fill={`url(#win-${model.id})`}
+            stroke={c.metalColor}
+            strokeWidth="3"
+          />
+          <line
+            x1={Math.round(glassX + glassW * 0.33)}
+            y1={glassY}
+            x2={Math.round(glassX + glassW * 0.33)}
+            y2={glassY + glassH}
+            stroke={c.metalColor}
+            strokeWidth="2.5"
+          />
+          <line
+            x1={Math.round(glassX + glassW * 0.66)}
+            y1={glassY}
+            x2={Math.round(glassX + glassW * 0.66)}
+            y2={glassY + glassH}
+            stroke={c.metalColor}
+            strokeWidth="2.5"
+          />
+
+          {/* Second Story Window & Slab */}
+          {c.stories === 2 && (
+            <g>
+              <rect
+                x={glassX + 10}
+                y={mainTopY + 16}
+                width={glassW - 20}
+                height={Math.round(storyH * 0.65)}
+                fill={`url(#win-${model.id})`}
+                stroke={c.metalColor}
+                strokeWidth="2.5"
+              />
+              <rect
+                x={baseX - 10}
+                y={groundY - 12 - storyH}
+                width={baseW + 24}
+                height="9"
+                fill={c.roofColor}
+              />
+            </g>
+          )}
+
+          {/* Secondary Skin Timber Louvers */}
+          <g fill={c.woodColor}>
+            {Array.from({ length: louverCount }).map((_, idx) => (
+              <rect
+                key={idx}
+                x={louverStartX + idx * louverSpacing}
+                y={mainTopY + 14}
+                width="4"
+                height={mainH - 18}
+              />
+            ))}
+          </g>
+
+          {/* Roof Silhouette by Archetype */}
+          {c.roofType === 'joglo-kontemporer' ? (
+            <g>
+              <polygon
+                points={`${baseX - 32},${mainTopY + 6} ${baseX + baseW + 32},${mainTopY + 6} ${baseX + baseW - 14},${mainTopY - 24} ${baseX + 14},${mainTopY - 24}`}
+                fill={c.roofColor}
+              />
+              <polygon
+                points={`${baseX + 34},${mainTopY - 22} ${baseX + baseW - 34},${mainTopY - 22} ${Math.round(baseX + baseW * 0.62)},${mainTopY - 70} ${Math.round(baseX + baseW * 0.38)},${mainTopY - 70}`}
+                fill={c.roofColor}
+              />
+              <rect
+                x={baseX - 32}
+                y={mainTopY + 2}
+                width={baseW + 64}
+                height="4"
+                fill={c.woodColor}
+              />
+            </g>
+          ) : c.roofType === 'japandi-gable' ? (
+            <polygon
+              points={`${baseX - 22},${mainTopY + 6} ${Math.round(baseX + baseW * 0.54)},${mainTopY - 50} ${baseX + baseW + 22},${mainTopY + 6}`}
+              fill={c.roofColor}
+              stroke={c.woodColor}
+              strokeWidth="4"
+            />
+          ) : c.roofType === 'tropical-hip' || c.roofType === 'mediterranean-arch' ? (
+            <polygon
+              points={`${baseX - 28},${mainTopY + 4} ${baseX + baseW + 28},${mainTopY + 4} ${Math.round(baseX + baseW * 0.72)},${mainTopY - 44} ${Math.round(baseX + baseW * 0.28)},${mainTopY - 44}`}
+              fill={c.roofColor}
+            />
+          ) : c.roofType === 'industrial-sawtooth' ? (
+            <polygon
+              points={`${baseX - 8},${mainTopY + 4} ${Math.round(baseX + baseW * 0.48)},${mainTopY - 34} ${Math.round(baseX + baseW * 0.48)},${mainTopY + 4} ${baseX + baseW + 8},${mainTopY - 34} ${baseX + baseW + 8},${mainTopY + 4}`}
+              fill={c.roofColor}
+            />
+          ) : c.roofType === 'compact-mono' ? (
+            <polygon
+              points={`${baseX - 16},${mainTopY + 8} ${baseX + baseW + 18},${mainTopY - 26} ${baseX + baseW + 18},${mainTopY + 8}`}
+              fill={c.roofColor}
+            />
+          ) : (
+            <g>
+              <rect
+                x={baseX - 26}
+                y={mainTopY - 10}
+                width={baseW + 52}
+                height="13"
+                fill={c.roofColor}
+              />
+              <rect
+                x={baseX - 24}
+                y={mainTopY + 3}
+                width={baseW + 48}
+                height="4"
+                fill={c.woodColor}
+              />
+            </g>
+          )}
+
+          {/* Reflection Pool in Foreground */}
+          {c.hasPool && (
+            <g>
+              <rect
+                x={baseX + 18}
+                y={groundY + 14}
+                width={baseW - 12}
+                height="50"
+                fill={`url(#pool-${model.id})`}
+                stroke={c.stoneColor}
+                strokeWidth="2.5"
+              />
+              <rect
+                x={glassX}
+                y={groundY + 18}
+                width={Math.round(glassW * 0.85)}
+                height="36"
+                fill="rgba(255, 210, 140, 0.2)"
+              />
+            </g>
+          )}
+        </svg>
+
+        {/* Crisp HTML Badge Overlay */}
+        <div className="absolute top-3 left-3 bg-[#161915]/85 border border-white/10 px-2.5 py-1 rounded text-[11px] font-mono-tabular text-[#F6F3EC]">
+          {model.floors} LANTAI · {model.buildingArea}
+        </div>
+      </div>
+    );
+  }
+);
 
 interface InteriorIllustrationProps {
   room: InteriorRoom;
@@ -264,139 +267,75 @@ interface InteriorIllustrationProps {
   className?: string;
 }
 
-export const InteriorCardCanvas: React.FC<InteriorIllustrationProps> = ({
-  room,
-  styleConfig,
-  className = '',
-}) => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+export const InteriorCardCanvas: React.FC<InteriorIllustrationProps> = React.memo(
+  ({ room, styleConfig, className = '' }) => {
+    return (
+      <div
+        className={`relative w-full h-full overflow-hidden select-none ${className}`}
+        style={{ backgroundColor: styleConfig.wallHex }}
+        role="img"
+        aria-label={`Ilustrasi interior ${room.name} dengan gaya ${styleConfig.name}`}
+      >
+        <svg
+          viewBox="0 0 560 360"
+          className="w-full h-full object-cover block"
+          preserveAspectRatio="xMidYMid slice"
+        >
+          {/* Back Wall */}
+          <rect width="560" height="360" fill={styleConfig.wallHex} />
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+          {/* Left & Right Perspective Walls */}
+          <polygon points="0,0 85,55 85,280 0,360" fill="rgba(0,0,0,0.06)" />
+          <polygon points="560,0 475,55 475,280 560,360" fill="rgba(0,0,0,0.09)" />
 
-    const width = 560;
-    const height = 360;
-    canvas.width = width;
-    canvas.height = height;
+          {/* Ceiling Plane */}
+          <polygon points="0,0 560,0 475,55 85,55" fill="#FAF8F5" />
 
-    // 1. Back Wall & Perspective Room Box
-    ctx.fillStyle = styleConfig.wallHex;
-    ctx.fillRect(0, 0, width, height);
+          {/* Floor Plane */}
+          <polygon points="85,280 475,280 560,360 0,360" fill={styleConfig.floorHex} />
 
-    // Left & Right Perspective Walls with Subtle Shading
-    ctx.fillStyle = 'rgba(0,0,0,0.06)';
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(85, 55);
-    ctx.lineTo(85, height - 80);
-    ctx.lineTo(0, height);
-    ctx.closePath();
-    ctx.fill();
+          {/* Area Rug */}
+          <polygon points="145,296 415,296 465,348 95,348" fill={styleConfig.rugHex} />
 
-    ctx.fillStyle = 'rgba(0,0,0,0.09)';
-    ctx.beginPath();
-    ctx.moveTo(width, 0);
-    ctx.lineTo(width - 85, 55);
-    ctx.lineTo(width - 85, height - 80);
-    ctx.lineTo(width, height);
-    ctx.closePath();
-    ctx.fill();
+          {/* Acoustic Wood Slat Feature Panel */}
+          <g fill={styleConfig.woodHex}>
+            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
+              <rect key={i} x={115 + i * 11} y="72" width="6" height="205" />
+            ))}
+          </g>
 
-    // Ceiling & Warm Indirect Cove Light
-    ctx.fillStyle = '#FAF8F5';
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(width, 0);
-    ctx.lineTo(width - 85, 55);
-    ctx.lineTo(85, 55);
-    ctx.closePath();
-    ctx.fill();
+          {/* Daylight Window on Right */}
+          <rect
+            x="345"
+            y="78"
+            width="102"
+            height="190"
+            fill={styleConfig.lightWarmthHex}
+            stroke={styleConfig.metalHex}
+            strokeWidth="3"
+          />
 
-    const coveGrad = ctx.createLinearGradient(0, 48, 0, 110);
-    coveGrad.addColorStop(0, styleConfig.lightWarmthHex);
-    coveGrad.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = coveGrad;
-    ctx.fillRect(85, 50, width - 170, 60);
+          {/* Main Furniture Piece */}
+          <rect x="165" y="232" width="210" height="50" rx="3" fill={styleConfig.fabricHex} />
+          <rect x="160" y="276" width="220" height="12" rx="2" fill={styleConfig.woodHex} />
+          <rect x="182" y="240" width="42" height="28" rx="2" fill={styleConfig.accentHex} />
+          <rect x="315" y="240" width="42" height="28" rx="2" fill={styleConfig.accentHex} />
 
-    // Floor Plane
-    ctx.fillStyle = styleConfig.floorHex;
-    ctx.beginPath();
-    ctx.moveTo(85, height - 80);
-    ctx.lineTo(width - 85, height - 80);
-    ctx.lineTo(width, height);
-    ctx.lineTo(0, height);
-    ctx.closePath();
-    ctx.fill();
+          {/* Foreground Table */}
+          <rect x="215" y="298" width="130" height="16" rx="2" fill={styleConfig.woodHex} />
 
-    // Area Rug
-    ctx.fillStyle = styleConfig.rugHex;
-    ctx.beginPath();
-    ctx.moveTo(145, height - 62);
-    ctx.lineTo(width - 145, height - 62);
-    ctx.lineTo(width - 95, height - 12);
-    ctx.lineTo(95, height - 12);
-    ctx.closePath();
-    ctx.fill();
-
-    // Wood Slat Feature Panel on Back Wall
-    ctx.fillStyle = styleConfig.woodHex;
-    const panelX = 115;
-    const panelY = 72;
-    const panelW = 110;
-    const panelH = height - 152;
-    for (let x = panelX; x < panelX + panelW; x += 10) {
-      ctx.fillRect(x, panelY, 6, panelH);
-    }
-
-    // Window Opening on Right Side of Back Wall
-    const winX = width - 215;
-    const winY = 78;
-    const winW = 105;
-    const winH = height - 165;
-    const daylightGrad = ctx.createLinearGradient(winX, winY, winX + winW, winY + winH);
-    daylightGrad.addColorStop(0, '#FFFDF8');
-    daylightGrad.addColorStop(1, '#DCE5D8');
-    ctx.fillStyle = daylightGrad;
-    ctx.fillRect(winX, winY, winW, winH);
-    ctx.strokeStyle = styleConfig.metalHex;
-    ctx.lineWidth = 3;
-    ctx.strokeRect(winX, winY, winW, winH);
-
-    // Center Furniture Silhouette Depending on Room Type
-    const centerY = height - 125;
-    ctx.fillStyle = styleConfig.fabricHex;
-    ctx.fillRect(165, centerY, 210, 52);
-    // Wood Base / Plinth of Furniture
-    ctx.fillStyle = styleConfig.woodHex;
-    ctx.fillRect(160, centerY + 46, 220, 12);
-    // Accent Cushions / Table
-    ctx.fillStyle = styleConfig.accentHex;
-    ctx.fillRect(180, centerY + 8, 42, 30);
-    ctx.fillRect(315, centerY + 8, 42, 30);
-
-    // Coffee Table / Island in Foreground
-    ctx.fillStyle = styleConfig.woodHex;
-    ctx.fillRect(215, centerY + 64, 130, 18);
-
-    // Architectural Pendant Light
-    ctx.strokeStyle = styleConfig.metalHex;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(width / 2, 30);
-    ctx.lineTo(width / 2, 115);
-    ctx.stroke();
-    ctx.fillStyle = styleConfig.accentHex;
-    ctx.fillRect(width / 2 - 36, 112, 72, 8);
-  }, [room, styleConfig]);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      aria-label={`Ilustrasi interior ${room.name} dengan gaya ${styleConfig.name}`}
-      className={`w-full h-full object-cover block ${className}`}
-    />
-  );
-};
+          {/* Pendant Lamp */}
+          <line
+            x1="280"
+            y1="30"
+            x2="280"
+            y2="112"
+            stroke={styleConfig.metalHex}
+            strokeWidth="2"
+          />
+          <rect x="244" y="110" width="72" height="8" rx="2" fill={styleConfig.accentHex} />
+        </svg>
+      </div>
+    );
+  }
+);

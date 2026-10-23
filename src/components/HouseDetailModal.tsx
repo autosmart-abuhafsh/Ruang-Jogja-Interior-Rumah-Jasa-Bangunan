@@ -1,18 +1,20 @@
 import React, { useEffect } from 'react';
-import { X, Check, ArrowRight, Layers, Compass } from 'lucide-react';
+import { X, Check, ArrowRight, Layers, Compass, Box } from 'lucide-react';
 import { HouseModel } from '../config/siteConfig';
-import { InteractiveHouse3D } from './InteractiveHouse3D';
+import { HouseCardCanvas } from './ProceduralArchIllustration';
 
 interface HouseDetailModalProps {
   model: HouseModel | null;
   onClose: () => void;
   onSelectForConsultation: (model: HouseModel) => void;
+  onLoadInMain3D?: (model: HouseModel) => void;
 }
 
 export const HouseDetailModal: React.FC<HouseDetailModalProps> = ({
   model,
   onClose,
   onSelectForConsultation,
+  onLoadInMain3D,
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -32,8 +34,12 @@ export const HouseDetailModal: React.FC<HouseDetailModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-house-title"
+      onClick={onClose}
     >
-      <div className="relative w-full max-w-[1120px] bg-[#F6F3EC] text-[#181D18] rounded-xl border border-[#181D18]/20 shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col">
+      <div
+        className="relative w-full max-w-[1040px] bg-[#F6F3EC] text-[#181D18] rounded-xl border border-[#181D18]/20 shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 bg-[#181D18] text-[#F6F3EC] border-b border-white/10 shrink-0">
           <div>
@@ -55,78 +61,126 @@ export const HouseDetailModal: React.FC<HouseDetailModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left: Live 3D Interactive Viewport */}
-          <div className="lg:col-span-7 h-[420px] sm:h-[480px]">
-            <InteractiveHouse3D selectedModel={model} compactMode />
+        <div className="p-6 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          {/* Left: High-Contrast Architectural Elevation & Material Swatches */}
+          <div className="lg:col-span-6 flex flex-col justify-between bg-[#161915] rounded-xl overflow-hidden border border-[#181D18]/15 text-[#F6F3EC]">
+            <div className="h-[260px] sm:h-[310px] w-full">
+              <HouseCardCanvas model={model} />
+            </div>
+
+            <div className="p-5 space-y-4 border-t border-white/10">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono-tabular uppercase tracking-wider text-[#C99A63]">
+                  Skema Palet Fasad & Atap
+                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="w-4 h-4 rounded-sm border border-white/20"
+                    style={{ backgroundColor: model.config3D.wallColor }}
+                    title="Dinding Utama"
+                  />
+                  <span
+                    className="w-4 h-4 rounded-sm border border-white/20"
+                    style={{ backgroundColor: model.config3D.secondaryWallColor }}
+                    title="Massa Sekunder"
+                  />
+                  <span
+                    className="w-4 h-4 rounded-sm border border-white/20"
+                    style={{ backgroundColor: model.config3D.woodColor }}
+                    title="Elemen Kayu"
+                  />
+                  <span
+                    className="w-4 h-4 rounded-sm border border-white/20"
+                    style={{ backgroundColor: model.config3D.roofColor }}
+                    title="Penutup Atap"
+                  />
+                </div>
+              </div>
+
+              {onLoadInMain3D && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onLoadInMain3D(model);
+                    onClose();
+                  }}
+                  className="w-full py-2.5 px-4 bg-[#283329] hover:bg-[#324033] text-[#F6F3EC] border border-[#B87D4B]/50 text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Box className="w-4 h-4 text-[#C99A63]" />
+                  <span>Buka & Putar Model Ini di Panggung 3D Utama</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Right: Architectural Concept & Specifications */}
-          <div className="lg:col-span-5 space-y-5">
-            <div>
-              <h4 className="text-xs font-mono-tabular uppercase tracking-wider text-[#8C582B] mb-1.5">
-                Deskripsi Konsep Ruang
-              </h4>
-              <p className="text-sm text-[#181D18]/85 leading-relaxed">{model.detailedDesc}</p>
-            </div>
+          <div className="lg:col-span-6 flex flex-col justify-between space-y-5">
+            <div className="space-y-5">
+              <div>
+                <h4 className="text-xs font-mono-tabular uppercase tracking-wider text-[#8C582B] mb-1.5">
+                  Deskripsi Konsep Ruang
+                </h4>
+                <p className="text-sm text-[#181D18]/85 leading-relaxed">{model.detailedDesc}</p>
+              </div>
 
-            {/* Tabular Spec Grid */}
-            <div className="grid grid-cols-2 gap-3 p-4 bg-[#EFECE4] rounded-lg border border-[#181D18]/10 text-xs">
-              <div>
-                <div className="text-[#181D18]/60">Luas Lahan Ideal</div>
-                <div className="font-mono-tabular font-semibold text-sm text-[#181D18] mt-0.5">
-                  {model.idealLandSize}
+              {/* Tabular Spec Grid */}
+              <div className="grid grid-cols-2 gap-3 p-4 bg-[#EFECE4] rounded-lg border border-[#181D18]/10 text-xs">
+                <div>
+                  <div className="text-[#181D18]/60">Luas Lahan Ideal</div>
+                  <div className="font-mono-tabular font-semibold text-sm text-[#181D18] mt-0.5">
+                    {model.idealLandSize}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[#181D18]/60">Perkiraan Bangunan</div>
+                  <div className="font-mono-tabular font-semibold text-sm text-[#181D18] mt-0.5">
+                    {model.buildingArea}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[#181D18]/60">Kapasitas Ruang</div>
+                  <div className="font-semibold text-sm text-[#181D18] mt-0.5">
+                    {model.bedrooms} · {model.bathrooms}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[#181D18]/60">Konfigurasi Massa</div>
+                  <div className="font-mono-tabular font-semibold text-sm text-[#181D18] mt-0.5">
+                    {model.floors} Lantai
+                  </div>
                 </div>
               </div>
-              <div>
-                <div className="text-[#181D18]/60">Perkiraan Bangunan</div>
-                <div className="font-mono-tabular font-semibold text-sm text-[#181D18] mt-0.5">
-                  {model.buildingArea}
-                </div>
-              </div>
-              <div>
-                <div className="text-[#181D18]/60">Kapasitas Ruang</div>
-                <div className="font-semibold text-sm text-[#181D18] mt-0.5">
-                  {model.bedrooms} · {model.bathrooms}
-                </div>
-              </div>
-              <div>
-                <div className="text-[#181D18]/60">Konfigurasi Massa</div>
-                <div className="font-mono-tabular font-semibold text-sm text-[#181D18] mt-0.5">
-                  {model.floors} Lantai
-                </div>
-              </div>
-            </div>
 
-            {/* Key Materials */}
-            <div>
-              <h4 className="text-xs font-mono-tabular uppercase tracking-wider text-[#8C582B] mb-2 flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5" />
-                <span>Karakter Material Utama</span>
-              </h4>
-              <div className="text-xs text-[#181D18]/85 leading-relaxed">
-                {model.keyMaterials.join(' · ')}
+              {/* Key Materials */}
+              <div>
+                <h4 className="text-xs font-mono-tabular uppercase tracking-wider text-[#8C582B] mb-1.5 flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Karakter Material Utama</span>
+                </h4>
+                <div className="text-xs text-[#181D18]/85 leading-relaxed">
+                  {model.keyMaterials.join(' · ')}
+                </div>
               </div>
-            </div>
 
-            {/* Architectural Highlights */}
-            <div>
-              <h4 className="text-xs font-mono-tabular uppercase tracking-wider text-[#8C582B] mb-2 flex items-center gap-1.5">
-                <Compass className="w-3.5 h-3.5" />
-                <span>Keunggulan Desain Tropis</span>
-              </h4>
-              <ul className="space-y-2 text-xs text-[#181D18]/85">
-                {model.architecturalHighlights.map((item, idx) => (
-                  <li key={idx} className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-[#8C582B] shrink-0 mt-0.5" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
+              {/* Architectural Highlights */}
+              <div>
+                <h4 className="text-xs font-mono-tabular uppercase tracking-wider text-[#8C582B] mb-2 flex items-center gap-1.5">
+                  <Compass className="w-3.5 h-3.5" />
+                  <span>Keunggulan Desain Tropis</span>
+                </h4>
+                <ul className="space-y-2 text-xs text-[#181D18]/85">
+                  {model.architecturalHighlights.map((item, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <Check className="w-4 h-4 text-[#8C582B] shrink-0 mt-0.5" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
 
             {/* Action CTA */}
-            <div className="pt-3 border-t border-[#181D18]/10 flex flex-col sm:flex-row gap-3">
+            <div className="pt-4 border-t border-[#181D18]/10 flex flex-col sm:flex-row gap-2.5">
               <button
                 type="button"
                 onClick={() => onSelectForConsultation(model)}

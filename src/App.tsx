@@ -996,6 +996,7 @@ export default function App() {
         model={detailModalModel}
         onClose={() => setDetailModalModel(null)}
         onSelectForConsultation={handleSelectModelForConsultation}
+        onLoadInMain3D={handlePreviewModelInHero3D}
       />
     </div>
   );
